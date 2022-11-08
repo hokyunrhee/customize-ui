@@ -1,9 +1,10 @@
 import dynamic from "next/dynamic";
-import { Box, useMediaQuery } from "@chakra-ui/react";
 import { isBrowser, isTablet, isMobile } from "react-device-detect";
 
-import { io } from "socket.io-client";
-import { useSocketQuery } from "../hooks/use-socket-query";
+import { Mobile } from "@/components/view/mobile";
+import { Tablet } from "@/components/view/tablet";
+import { OverHeadDisplay } from "@/components/view/over-head-display";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 const CustomView = dynamic(
   () => import("react-device-detect").then(({ CustomView }) => CustomView),
@@ -12,28 +13,21 @@ const CustomView = dynamic(
   }
 );
 
-const socketClient = io("http://localhost:5050", {
-  transports: ["websocket"],
-  autoConnect: false,
-});
-
 const Home = () => {
-  const [isLargerThan768] = useMediaQuery("(min-width: 768px)");
-
-  const { data } = useSocketQuery("message", socketClient);
+  const isLargerThan768 = useMediaQuery("(min-width: 768px)");
 
   return (
-    <Box>
+    <div>
       <CustomView condition={isBrowser}>
-        <div>Browser</div>
+        <OverHeadDisplay />
       </CustomView>
       <CustomView condition={isTablet && isLargerThan768}>
-        <div>Tablet</div>
+        <Tablet />
       </CustomView>
       <CustomView condition={isMobile && !isTablet && !isLargerThan768}>
-        <div>Mobile</div>
+        <Mobile />
       </CustomView>
-    </Box>
+    </div>
   );
 };
 
