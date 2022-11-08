@@ -1,10 +1,10 @@
 import dynamic from "next/dynamic";
+import { useMediaQuery } from "@chakra-ui/react";
 import { isBrowser, isTablet, isMobile } from "react-device-detect";
 
 import { Mobile } from "@/components/view/mobile";
 import { Tablet } from "@/components/view/tablet";
-import { OverHeadDisplay } from "@/components/view/over-head-display";
-import { useMediaQuery } from "@/hooks/use-media-query";
+import { OverHeadDisplayView } from "@/components/overhead-widgets-view";
 
 const CustomView = dynamic(
   () => import("react-device-detect").then(({ CustomView }) => CustomView),
@@ -14,12 +14,12 @@ const CustomView = dynamic(
 );
 
 const Home = () => {
-  const isLargerThan768 = useMediaQuery("(min-width: 768px)");
+  const [isLargerThan768] = useMediaQuery("(min-width: 768px)");
 
   return (
-    <div>
+    <>
       <CustomView condition={isBrowser}>
-        <OverHeadDisplay />
+        <OverHeadDisplayView />
       </CustomView>
       <CustomView condition={isTablet && isLargerThan768}>
         <Tablet />
@@ -27,7 +27,7 @@ const Home = () => {
       <CustomView condition={isMobile && !isTablet && !isLargerThan768}>
         <Mobile />
       </CustomView>
-    </div>
+    </>
   );
 };
 
