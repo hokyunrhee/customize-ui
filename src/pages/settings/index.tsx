@@ -4,17 +4,17 @@ import NextLink from "next/link";
 const CATEGORIES = [
   {
     name: "Overhead Display",
-    href: "/settings/overhead-display",
+    href: "/settings/mip/overhead",
     imageSrc: "",
   },
   {
     name: "Tablet",
-    href: "/settings/tablet",
+    href: "",
     imageSrc: "",
   },
   {
     name: "Mobile",
-    href: "/settings/mobile",
+    href: "/settings/mip/mobile",
     imageSrc: "",
   },
 ];

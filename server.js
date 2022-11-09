@@ -6,16 +6,16 @@ const { Server } = require("socket.io");
 const io = new Server(server);
 
 io.on("connection", (socket) => {
-  socket.on("update-over-head-display-layout", (message) => {
-    io.emit("over-head-display-layout", message);
+  socket.on("overhead", (message) => {
+    io.emit("overhead", message);
   });
 
-  socket.on("update-tablet-layout", (message) => {
-    io.emit("tablet-layout", message);
+  socket.on("tablet", (message) => {
+    io.emit("tablett", message);
   });
 
-  socket.on("update-mobile-layout", (message) => {
-    io.emit("mobile-layout", message);
+  socket.on("mobile", (message) => {
+    io.emit("mobile", message);
   });
 });
 
