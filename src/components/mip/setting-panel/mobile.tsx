@@ -16,6 +16,9 @@ import {
   HStack,
   Stack,
   Button,
+  Grid,
+  GridItem,
+  Flex,
 } from "@chakra-ui/react";
 import { useSocketQuery } from "@/hooks/use-socket-query";
 import {
@@ -59,26 +62,7 @@ const DragAndDrop = ({ itemGroup, setItemGroup }: DragAndDropProps) => {
     };
   }, []);
 
-  const WIDGET_COUNT = 8;
-  // const emptyWidgetGroups: DropGroup = Object.assign<DropGroup, DragItems[]>(
-  //   {},
-  //   new Array<DragItems>(WIDGET_COUNT).fill([])
-  // )
-
-  // const [itemGroup, setItemGroup] = useState<DropGroup>({
-  //   readyItem: [
-  //     { id: "1", content: "hi" },
-  //     { id: "2", content: "hello" },
-  //     { id: "3", content: "some" },
-  //     { id: "4", content: "thing" },
-  //     { id: "5", content: "thing" },
-  //     { id: "6", content: "thing" },
-  //     { id: "7", content: "thing" },
-  //     { id: "8", content: "thing" },
-  //   ],
-  //   execItem: new Array(8).fill(null),
-  //   // ...emptyWidgetGroups,
-  // });
+  // const WIDGET_COUNT = 8;
 
   const reorder = (list: Widget[], startIndex: number, endIndex: number) => {
     const result = [...list];
@@ -112,9 +96,82 @@ const DragAndDrop = ({ itemGroup, setItemGroup }: DragAndDropProps) => {
   const onDragEnd = (result: DropResult) => {
     console.log(result);
 
-    if (!result.destination) return;
+    const { source, destination, combine } = result;
+    if (combine) {
+      console.log("combine!!!!!!!!");
+      const { draggableId } = combine;
+      console.log(result);
+      const itemGroupCopy = { ...itemGroup };
+      const destinationPos = itemGroupCopy.staged.findIndex(
+        ({ role }) => role === draggableId
+      );
+      // 1:1에 1:1 넣을 때
 
-    const { source, destination } = result;
+      if (destinationPos > -1) {
+        const newKey = `${result.draggableId}+${itemGroupCopy.staged[destinationPos].role}`;
+
+        const startGroupItems = itemGroupCopy[source.droppableId];
+        const [removedItem, newStartGroupItems] = removeFromList(
+          startGroupItems,
+          source.index
+        );
+
+        itemGroupCopy[source.droppableId] = newStartGroupItems;
+
+        const newDestinationPos = itemGroupCopy.staged.findIndex(
+          ({ role }) => role === draggableId
+        );
+        const destinationItem = itemGroupCopy.staged[newDestinationPos];
+        const combinedItem = {
+          key: newKey,
+          children: [
+            { ...destinationItem, ratio: { x: 2, y: 1 } },
+            { ...removedItem, ratio: { x: 2, y: 1 } },
+          ],
+        };
+
+        itemGroupCopy.staged[newDestinationPos] = combinedItem;
+
+        setItemGroup(itemGroupCopy);
+      }
+
+      return;
+    }
+
+    //seperate
+    if (source.droppableId.indexOf("+") > -1) {
+      console.log("seperate!!!");
+
+      const itemGroupCopy = { ...itemGroup };
+      const sourceIndex = itemGroupCopy.staged.findIndex(
+        ({ key }) => key === source.droppableId
+      );
+      console.log(sourceIndex);
+      const removedItem = {
+        ...itemGroupCopy.staged[sourceIndex].children[source.index],
+        ratio: { x: 1, y: 1 },
+      };
+
+      const restItem =
+        itemGroupCopy.staged[sourceIndex].children[1 - source.index];
+
+      itemGroupCopy.staged[sourceIndex] = {
+        ...restItem,
+        ratio: { x: 1, y: 1 },
+      };
+
+      const newAddedList = addToList(
+        itemGroupCopy.staged,
+        destination?.index,
+        removedItem
+      );
+      itemGroupCopy.staged = newAddedList;
+
+      setItemGroup(itemGroupCopy);
+      return;
+    }
+
+    if (!destination) return;
     const itemGroupCopy = { ...itemGroup };
 
     const dragEndInSameGroup = source.droppableId === destination.droppableId;
@@ -126,7 +183,7 @@ const DragAndDrop = ({ itemGroup, setItemGroup }: DragAndDropProps) => {
         destination.index
       );
       itemGroupCopy[source.droppableId] = reorderedItemList;
-
+      console.log({ itemGroupCopy });
       setItemGroup(itemGroupCopy);
       return;
     }
@@ -143,151 +200,20 @@ const DragAndDrop = ({ itemGroup, setItemGroup }: DragAndDropProps) => {
       destination.index,
       removedItem
     );
-
+    console.log({ itemGroupCopy });
     setItemGroup(itemGroupCopy);
   };
 
   if (!isClient) return null;
   return (
-    <Center height="800px" width="100vw">
-      <Center bg="primary.200" height="1080px" width="3840px">
-        <Stack width="100%">
-          <DragDropContext onDragEnd={onDragEnd}>
-            <StictModeDroppable droppableId="ready" direction="horizontal">
-              {(provided) => (
-                <Box>
-                  <Box fontSize="40px">Ready</Box>
-                  <Box
-                    display="flex"
-                    border="5px solid black"
-                    height="200px"
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                  >
-                    {itemGroup.ready.map((item, index) => (
-                      <Draggable
-                        key={item.role}
-                        draggableId={item.role}
-                        index={index}
-                      >
-                        {(providedDraggable) => {
-                          return (
-                            <Box
-                              width="200px"
-                              height="200px"
-                              border="1px solid white"
-                              borderRadius="8px"
-                              overflow="hidden"
-                              bg="gray"
-                              ref={providedDraggable.innerRef}
-                              {...providedDraggable.draggableProps}
-                              {...providedDraggable.dragHandleProps}
-                            >
-                              {item.role}
-                              {/* <SomeMari data={item.id} /> */}
-                            </Box>
-                          );
-                        }}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </Box>
-                </Box>
-              )}
-            </StictModeDroppable>
-            <StictModeDroppable
-              droppableId={"staged"}
-              direction="horizontal"
-              // isCombineEnabled={true}
-            >
-              {(provided, { isDraggingOver }) => {
-                return (
-                  <Box>
-                    <Box fontSize="40px">Staged</Box>
-                    <Box
-                      border={
-                        isDraggingOver ? "9px solid green" : "9px dashed gray"
-                      }
-                      width="100%"
-                      height="200px"
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                    >
-                      <HStack>
-                        {itemGroup.staged?.map((item, index) => {
-                          if (!item) return null;
-                          return (
-                            <Draggable
-                              key={item.role}
-                              draggableId={item.role}
-                              index={index}
-                            >
-                              {(providedDraggable) => {
-                                return (
-                                  <Box
-                                    ref={providedDraggable.innerRef}
-                                    {...providedDraggable.draggableProps}
-                                    {...providedDraggable.dragHandleProps}
-                                    width="200px"
-                                    height="200px"
-                                    border="1px solid white"
-                                    borderRadius="8px"
-                                    overflow="hidden"
-                                    position="relative"
-                                    bg="gray"
-                                  >
-                                    {/* <SomeMari data={item.id} /> */}
-                                    {item.role}
-                                    <Center
-                                      onClick={() => {
-                                        const itemGroupCopy = {
-                                          ...itemGroup,
-                                        };
-                                        const [
-                                          removedItem,
-                                          newStartGroupItems,
-                                        ] = removeFromList(
-                                          itemGroupCopy.staged,
-                                          index
-                                        );
-                                        itemGroupCopy.staged =
-                                          newStartGroupItems;
-                                        itemGroupCopy.ready = addToList(
-                                          itemGroupCopy.ready,
-                                          itemGroupCopy.ready.length,
-                                          removedItem
-                                        );
-                                        setItemGroup(itemGroupCopy);
-                                      }}
-                                      position="absolute"
-                                      left="50%"
-                                      top="50%"
-                                      transform="translate(-50%, -50%)"
-                                      bg="red"
-                                      borderRadius="full"
-                                      width="100px"
-                                      height="100px"
-                                      color="white"
-                                      fontSize="100px"
-                                    >
-                                      -
-                                    </Center>
-                                  </Box>
-                                );
-                              }}
-                            </Draggable>
-                          );
-                        })}
-                      </HStack>
-                    </Box>
-                  </Box>
-                );
-              }}
-            </StictModeDroppable>
-          </DragDropContext>
-        </Stack>
-      </Center>
-    </Center>
+    <Box width="100%" overflow="hidden">
+      <Stack width="100%">
+        <DragDropContext onDragEnd={onDragEnd}>
+          <ReadyWidgetList readyList={itemGroup.ready} />
+          <StagedWidgetList stagedList={itemGroup.staged} />
+        </DragDropContext>
+      </Stack>
+    </Box>
   );
 };
 
@@ -306,3 +232,200 @@ const StictModeDroppable = (props: DroppableProps) => {
 
   return <Droppable {...props} />;
 };
+
+const ReadyWidgetList = ({ readyList }: { readyList: Widget[] }) => {
+  return (
+    <StictModeDroppable droppableId="ready" direction="horizontal">
+      {(provided) => (
+        <Box>
+          <Box fontSize="40px">Ready</Box>
+          <Box
+            display="flex"
+            border="5px solid black"
+            height="200px"
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+          >
+            {readyList.map((item, index) => (
+              <Draggable key={item.role} draggableId={item.role} index={index}>
+                {(providedDraggable) => {
+                  return (
+                    <Box
+                      width="200px"
+                      height="200px"
+                      border="1px solid white"
+                      borderRadius="8px"
+                      overflow="hidden"
+                      bg="gray"
+                      ref={providedDraggable.innerRef}
+                      {...providedDraggable.draggableProps}
+                      {...providedDraggable.dragHandleProps}
+                    >
+                      {item.role}
+                      {/* <SomeMari data={item.id} /> */}
+                    </Box>
+                  );
+                }}
+              </Draggable>
+            ))}
+            {provided.placeholder}
+          </Box>
+        </Box>
+      )}
+    </StictModeDroppable>
+  );
+};
+
+const StagedWidgetList = ({ stagedList }: { stagedList: WidgetList }) => {
+  return (
+    <StictModeDroppable
+      droppableId={"staged"}
+      direction="horizontal"
+      isCombineEnabled={true}
+    >
+      {(provided, { isDraggingOver, draggingOverWith }) => {
+        return (
+          <Box>
+            <Box fontSize="40px">Staged</Box>
+            <Box
+              border={isDraggingOver ? "9px solid green" : "9px dashed gray"}
+              width="100%"
+              minHeight="200px"
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+            >
+              <Flex width="100%" flexWrap="wrap">
+                {stagedList.map((item, index) => {
+                  if (!item) return null;
+                  if ("children" in item) {
+                    return (
+                      <Box key={item.key} flex="0 0 1" width="50%">
+                        <Draggable draggableId={item.key} index={index}>
+                          {(providedDraggable) => (
+                            <Box
+                              padding="16px"
+                              borderRadius="8px"
+                              bg="blue"
+                              ref={providedDraggable.innerRef}
+                              {...providedDraggable.draggableProps}
+                              {...providedDraggable.dragHandleProps}
+                            >
+                              <VerticalCombineWidget
+                                droppableId={item.key}
+                                nestedWidgetList={item}
+                              />
+                            </Box>
+                          )}
+                        </Draggable>
+                      </Box>
+                    );
+                  }
+                  return (
+                    <Box key={item.role} flex="0 0 1" width="50%">
+                      <Draggable draggableId={item.role} index={index}>
+                        {(providedDraggable) => {
+                          return (
+                            <Box
+                              ref={providedDraggable.innerRef}
+                              {...providedDraggable.draggableProps}
+                              {...providedDraggable.dragHandleProps}
+                              padding="16px"
+                              bg="blue"
+                              border="1px solid white"
+                              borderRadius="8px"
+                              overflow="hidden"
+                              position="relative"
+                            >
+                              <Box bg="gray" height="200px">
+                                {item.role}
+                              </Box>
+                            </Box>
+                          );
+                        }}
+                      </Draggable>
+                    </Box>
+                  );
+                })}
+                <Box bg="yellow">{provided.placeholder}</Box>
+              </Flex>
+            </Box>
+          </Box>
+        );
+      }}
+    </StictModeDroppable>
+  );
+};
+
+const VerticalCombineWidget = ({
+  nestedWidgetList,
+  droppableId,
+}: {
+  nestedWidgetList: NestedWidget;
+  droppableId: DroppableId;
+}) => {
+  return (
+    <Box>
+      <StictModeDroppable
+        mode={"virtual"}
+        droppableId={droppableId}
+        isDropDisabled={nestedWidgetList.children.length > 1}
+        direction="vertical"
+      >
+        {(provided, { isDraggingOver }) => (
+          <Box
+            bg="yellow"
+            border={isDraggingOver ? "5px solid green" : "5px dashed gray"}
+            minHeight="200px"
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+          >
+            {provided.placeholder}
+            {nestedWidgetList?.children?.map((item, index) => (
+              <Draggable key={item.role} draggableId={item.role} index={index}>
+                {(providedDraggable) => {
+                  return (
+                    <Box
+                      ref={providedDraggable.innerRef}
+                      {...providedDraggable.draggableProps}
+                      {...providedDraggable.dragHandleProps}
+                      onDragStart={(e) => {
+                        e.stopPropagation();
+                        console.log("services stop propagation");
+                      }}
+                    >
+                      <Box2x1>
+                        {item.role}
+                        <br />
+                        THIS IS HALF
+                        {/* <SomeMari data={item.id} /> */}
+                      </Box2x1>
+                    </Box>
+                  );
+                }}
+              </Draggable>
+            ))}
+          </Box>
+        )}
+      </StictModeDroppable>
+    </Box>
+  );
+};
+
+const Box1x1 = (props) => (
+  <Box
+    bg="green"
+    boxSize="200px"
+    border="1px solid white"
+    overflow="hidden"
+    {...props}
+  />
+);
+const Box2x1 = (props) => (
+  <Box
+    bg="green"
+    height="100px"
+    border="1px solid white"
+    overflow="hidden"
+    {...props}
+  />
+);
