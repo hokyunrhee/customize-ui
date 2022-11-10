@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Box, Grid, VStack, Button } from "@chakra-ui/react";
 import GridLayout from "react-grid-layout";
+import GridItem from "react-grid-layout/build/Griditem";
 import "/node_modules/react-grid-layout/css/styles.css";
 import "/node_modules/react-resizable/css/styles.css";
 
@@ -44,7 +45,22 @@ export const OverheadMIPLayout = () => {
   }, []);
 
   const onTakeWidget = (widget: Item) => {
-    setWidgetLayout([...widgetLayout, widget]);
+    const moveZeroIndexItem = () => {
+      const newWidgetLayout = [...widgetLayout];
+      const zeroItemIndex = newWidgetLayout.findIndex(
+        (item) => item.x === 0 && item.y === 0
+      );
+      if (zeroItemIndex === -1) return newWidgetLayout;
+      const newHorizontalLayout = newWidgetLayout.map((item) => {
+        return { ...item, x: item.x + 1 };
+      });
+
+      return newHorizontalLayout;
+    };
+
+    const newWidgetLayout = moveZeroIndexItem();
+
+    setWidgetLayout([...newWidgetLayout, widget]);
     setWidgetBox(widgetBox.filter(({ i }) => i !== widget.i));
   };
 
@@ -61,6 +77,9 @@ export const OverheadMIPLayout = () => {
     socketClient.emit("overhead", { widgetLayout });
   };
 
+  const [dragStopItem, setDragStopItem] = useState(null);
+
+  const newWidgetLayout = JSON.parse(JSON.stringify(widgetLayout));
   return (
     <Box>
       <Box className="gird-layout" width="1920px">
@@ -108,28 +127,83 @@ export const OverheadMIPLayout = () => {
             cols={8}
             width={1920}
             rowHeight={1920 / 8 / 2}
+            maxRows={1}
             compactType="horizontal"
-            layout={widgetLayout}
-            onLayoutChange={onLayoutChange}
+            // preventCollision={true}
+            layout={newWidgetLayout}
+            //  layout: Layout[],
+            // oldItem: Layout,
+            // newItem: Layout,
+            // placeholder: Layout,
+            // event: MouseEvent,
+            // element:
+            onDrag={(...arg) => {
+              arg[3].x = arg[2].x;
+            }}
+            onDragStop={(...arg) => {
+              const [layout, _, movingItem] = arg;
+              const newItem = { ...movingItem };
+              const newLayout = layout.filter(({ i }) => i !== newItem.i);
+              // newItem.moved = false;
+              // newItem.static = true;
+
+              setDragStopItem([...newLayout, newItem]);
+            }}
+            // onDragStart={(...arg) => {
+            //   arg[4].stopPropagation();
+
+            //   if (!dragStopItem) return;
+
+            //   const newDND = dragStopItem.map((item) => {
+            //     return {
+            //       ...item,
+            //       // moved: true,
+            //       // static: false,
+            //       // isDraggable: true,
+            //     };
+            //   });
+
+            //   onLayoutChange(newDND);
+            // }}
+            onLayoutChange={(...arg) => {
+              if (dragStopItem) {
+                const newDND = dragStopItem.map((item) => {
+                  return {
+                    ...item,
+                    // moved: false,
+                    // static: true,
+                    // isDraggable: true,
+                  };
+                });
+
+                onLayoutChange(newDND);
+                setDragStopItem(null);
+                return;
+              }
+              onLayoutChange(...arg);
+              setDragStopItem(null);
+            }}
             isBounded={true}
             isResizable={false}
             margin={[0, 0]}
           >
             {widgetLayout.map((item) => (
-              <Box key={item.i} background="gray.700">
-                <Box>
-                  <Box
-                    className="hide-button"
-                    as="span"
-                    onClick={() => onPutItem(item)}
-                    fontSize="36px"
-                    cursor="pointer"
-                  >
-                    &times;
+              <GridItem key={item.i}>
+                <Box background="gray.700">
+                  <Box>
+                    <Box
+                      className="hide-button"
+                      as="span"
+                      onClick={() => onPutItem(item)}
+                      fontSize="36px"
+                      cursor="pointer"
+                    >
+                      &times;
+                    </Box>
                   </Box>
+                  <span>{item.i}</span>
                 </Box>
-                <span>{item.i}</span>
-              </Box>
+              </GridItem>
             ))}
           </GridLayout>
         </Box>
