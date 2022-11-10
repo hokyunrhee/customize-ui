@@ -3,7 +3,7 @@ import NextLink from "next/link";
 import { Box, Flex, VStack } from "@chakra-ui/react";
 
 const NAVIGATION = [
-  { name: "Dashboard", href: "#", icon: "" },
+  { name: "Dashboard", href: "/nas", icon: "" },
   { name: "Records", href: "#", icon: "" },
   { name: "Settings", href: "/settings", icon: "" },
 ];

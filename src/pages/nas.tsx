@@ -1,5 +1,6 @@
 import dynamic from "next/dynamic";
-import { useMediaQuery } from "@chakra-ui/react";
+import NextLink from "next/link";
+import { useMediaQuery, Button } from "@chakra-ui/react";
 import { isBrowser, isTablet, isMobile } from "react-device-detect";
 
 import {
@@ -40,6 +41,18 @@ const NAS = () => {
       <CustomView condition={isMobile && !isTablet && !isLargerThan768}>
         <MobileNASTemplate MIP={<MobileMIP />} />
       </CustomView>
+
+      <NextLink href="/">
+        <Button
+          position="fixed"
+          right="0"
+          bottom="0"
+          margin="24px"
+          colorScheme="orange"
+        >
+          Home
+        </Button>
+      </NextLink>
     </>
   );
 };

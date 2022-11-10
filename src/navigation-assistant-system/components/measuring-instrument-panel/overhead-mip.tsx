@@ -21,7 +21,7 @@ export const OverheadMIP = () => {
       cols={8}
       width={3840}
       rowHeight={240}
-      compactType="horizontal"
+      compactType={null}
       layout={widgetLayout}
       isBounded={true}
       isResizable={false}

@@ -108,7 +108,7 @@ export const OverheadMIPLayout = () => {
             cols={8}
             width={1920}
             rowHeight={1920 / 8 / 2}
-            compactType="horizontal"
+            compactType={null}
             layout={widgetLayout}
             onLayoutChange={onLayoutChange}
             isBounded={true}
