@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Box, Grid, VStack, Button } from "@chakra-ui/react";
 import GridLayout from "react-grid-layout";
-import GridItem from "react-grid-layout/build/Griditem";
 import "/node_modules/react-grid-layout/css/styles.css";
 import "/node_modules/react-resizable/css/styles.css";
+import "./dnd-util";
 
 import { socketClient } from "@/settings/api/socket-client";
 import { Widget } from "@/shared/components/widget";
@@ -45,22 +45,7 @@ export const OverheadMIPLayout = () => {
   }, []);
 
   const onTakeWidget = (widget: Item) => {
-    const moveZeroIndexItem = () => {
-      const newWidgetLayout = [...widgetLayout];
-      const zeroItemIndex = newWidgetLayout.findIndex(
-        (item) => item.x === 0 && item.y === 0
-      );
-      if (zeroItemIndex === -1) return newWidgetLayout;
-      const newHorizontalLayout = newWidgetLayout.map((item) => {
-        return { ...item, x: item.x + 1 };
-      });
-
-      return newHorizontalLayout;
-    };
-
-    const newWidgetLayout = moveZeroIndexItem();
-
-    setWidgetLayout([...newWidgetLayout, widget]);
+    setWidgetLayout([...widgetLayout, widget]);
     setWidgetBox(widgetBox.filter(({ i }) => i !== widget.i));
   };
 
@@ -77,9 +62,6 @@ export const OverheadMIPLayout = () => {
     socketClient.emit("overhead", { widgetLayout });
   };
 
-  const [dragStopItem, setDragStopItem] = useState(null);
-
-  const newWidgetLayout = JSON.parse(JSON.stringify(widgetLayout));
   return (
     <Box>
       <Box className="gird-layout" width="1920px">
@@ -126,70 +108,20 @@ export const OverheadMIPLayout = () => {
           <GridLayout
             cols={8}
             width={1920}
-            rowHeight={1920 / 8 / 2}
-            maxRows={1}
+            rowHeight={1920 / 8 / 3}
+            maxRows={2}
             compactType="horizontal"
+            // isLeftShift={true}
             // preventCollision={true}
-            layout={newWidgetLayout}
-            //  layout: Layout[],
-            // oldItem: Layout,
-            // newItem: Layout,
-            // placeholder: Layout,
-            // event: MouseEvent,
-            // element:
-            onDrag={(...arg) => {
-              arg[3].x = arg[2].x;
-            }}
-            onDragStop={(...arg) => {
-              const [layout, _, movingItem] = arg;
-              const newItem = { ...movingItem };
-              const newLayout = layout.filter(({ i }) => i !== newItem.i);
-              // newItem.moved = false;
-              // newItem.static = true;
-
-              setDragStopItem([...newLayout, newItem]);
-            }}
-            // onDragStart={(...arg) => {
-            //   arg[4].stopPropagation();
-
-            //   if (!dragStopItem) return;
-
-            //   const newDND = dragStopItem.map((item) => {
-            //     return {
-            //       ...item,
-            //       // moved: true,
-            //       // static: false,
-            //       // isDraggable: true,
-            //     };
-            //   });
-
-            //   onLayoutChange(newDND);
-            // }}
-            onLayoutChange={(...arg) => {
-              if (dragStopItem) {
-                const newDND = dragStopItem.map((item) => {
-                  return {
-                    ...item,
-                    // moved: false,
-                    // static: true,
-                    // isDraggable: true,
-                  };
-                });
-
-                onLayoutChange(newDND);
-                setDragStopItem(null);
-                return;
-              }
-              onLayoutChange(...arg);
-              setDragStopItem(null);
-            }}
+            layout={widgetLayout}
+            onLayoutChange={onLayoutChange}
             isBounded={true}
             isResizable={false}
             margin={[0, 0]}
           >
             {widgetLayout.map((item) => (
-              <GridItem key={item.i}>
-                <Box background="gray.700">
+              <Box key={item.i}>
+                <Box background="gray.700" height="100%">
                   <Box>
                     <Box
                       className="hide-button"
@@ -203,7 +135,7 @@ export const OverheadMIPLayout = () => {
                   </Box>
                   <span>{item.i}</span>
                 </Box>
-              </GridItem>
+              </Box>
             ))}
           </GridLayout>
         </Box>
